@@ -304,17 +304,15 @@ export const createAdmin = async (req, res) => {
   }
 
   try {
-    // Registramos al admin directamente con isVerified: true
     const admin = await userService.registerUser({
       name,
       email,
       password,
       photo,
-      role: 'admin', // Aseguramos que tenga el rol de admin
-      isVerified: true, // No requiere verificación adicional, se crea como verificado
+      role: 'admin', 
+      isVerified: true, 
     });
 
-    // Respondemos con el éxito
     res.status(201).json({
       message: 'Admin creado exitosamente.',
       user: admin,

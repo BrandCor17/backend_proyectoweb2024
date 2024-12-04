@@ -22,6 +22,7 @@ export const registerUser = async ({ name, email, password, photo, role, verific
       isVerified: false,  
     });
 
+    await user.save();
 
     console.log('Usuario registrado:', user);
     return user; 
