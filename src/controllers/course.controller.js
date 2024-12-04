@@ -261,3 +261,85 @@ export const getCourseById = async (req, res) => {
 };
 
 
+export const leaveCourse = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const userId = req.user._id; 
+
+      console.log(courseId + userId);
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Curso no encontrado' });
+    }
+
+    if (course.instructor?.toString() === userId.toString()) {
+      return res.status(400).json({ message: 'El instructor no puede salir del curso' });
+    }
+
+    if (course.students.includes(userId)) {
+      course.students = course.students.filter(studentId => studentId.toString() !== userId.toString());
+    }
+
+    if (course.catedraticos.includes(userId)) {
+      course.catedraticos = course.catedraticos.filter(catedraticoId => catedraticoId.toString() !== userId.toString());
+    }
+
+    await course.save();
+
+    const user = await User.findById(userId);
+
+    if (user.coursesAsStudent.includes(courseId)) {
+      user.coursesAsStudent = user.coursesAsStudent.filter(courseIdInList => courseIdInList.toString() !== courseId);
+    }
+
+    if (user.coursesAsCatedratico.includes(courseId)) {
+      user.coursesAsCatedratico = user.coursesAsCatedratico.filter(courseIdInList => courseIdInList.toString() !== courseId);
+    }
+
+    await user.save(); 
+
+    return res.status(200).json({ message: 'Usuario eliminado del curso correctamente' });
+  } catch (err) {
+    console.error("Error al eliminar del curso:", err);
+    res.status(500).json({ message: 'Error al eliminar al usuario del curso' });
+  }
+};
+
+
+export const addSection = async (req, res) => {
+  // Obtén el courseId desde la URL
+  const { courseId } = req.params;
+  // Obtén los datos de la sección desde el cuerpo de la solicitud
+  const sectionData = req.body;
+
+  console.log(courseId); // Verifica que el courseId sea el correcto
+  console.log(sectionData); // Verifica que la sección está llegando correctamente
+
+  try {
+    // Busca el curso por su ID
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      return res.status(404).json({ message: "Curso no encontrado" });
+    }
+
+    // Asigna el orden basado en el número de secciones existentes
+    const newOrder = course.sections.length + 1;
+    const newSection = {
+      ...sectionData,
+      order: newOrder,
+    };
+
+    // Agrega la nueva sección al curso
+    course.sections.push(newSection);
+
+    // Guarda el curso con la nueva sección
+    await course.save();
+
+    // Devuelve el curso actualizado
+    return res.status(200).json(course);
+  } catch (error) {
+    console.error("Error al agregar la sección:", error);
+    res.status(500).json({ message: "Error al agregar la sección" });
+  }
+};

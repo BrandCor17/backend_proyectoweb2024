@@ -1,5 +1,5 @@
 import express from 'express';
-import { createCourse, getCourses, enrollInCourse, getUserCourses, deleteCourse, assignInstructorToCourse , getInstructorCoursesAsStudent, assignCatedratico, getCourseById} from '../controllers/course.controller.js';
+import { createCourse, getCourses, enrollInCourse, getUserCourses, deleteCourse, assignInstructorToCourse , getInstructorCoursesAsStudent, assignCatedratico, getCourseById, leaveCourse, addSection} from '../controllers/course.controller.js';
 import authMiddleware from '../middleware/auth.middleware.js'; 
 
 const router = express.Router();
@@ -18,5 +18,7 @@ router.get('/InstructorCoursesAsStudent', authMiddleware, getInstructorCoursesAs
 router.delete("/delete/:courseId", authMiddleware, deleteCourse);
 
 router.patch("/assign-instructor/:instructorId", authMiddleware, assignInstructorToCourse);
+router.delete('/remove-user/:courseId', authMiddleware, leaveCourse);
+router.post("/:courseId/sections", addSection);
 
 export default router;

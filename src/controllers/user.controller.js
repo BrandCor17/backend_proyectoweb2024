@@ -59,14 +59,23 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    // Autenticación del usuario con el servicio de login
     const user = await userService.loginUser({ email, password });
 
+    // Generación del token con información adicional (name, email, role, photo)
     const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      {
+        id: user.id,
+        name: user.name,               // Incluir el nombre del usuario
+        role: user.role,               // Incluir el rol del usuario
+        email: user.email,             // Incluir el correo electrónico
+        profileImageUrl: user.photo || 'default_image_url',  // Incluir la foto de perfil (o una por defecto)
+      },
+      process.env.JWT_SECRET,         // Clave secreta para firmar el token
+      { expiresIn: '1h' }             // Expiración del token (1 hora en este caso)
     );
 
+    // Responder con el token y los datos del usuario
     res.status(200).json({
       message: 'Inicio de sesión exitoso',
       user: {
@@ -76,13 +85,14 @@ export const login = async (req, res) => {
         role: user.role,
         photo: user.photo || 'default_image_url',
       },
-      token,
+      token, // Incluir el token JWT
     });
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
     res.status(400).json({ message: error.message });
   }
 };
+
 /**
  * Validación de token JWT
  */
@@ -91,14 +101,29 @@ export const verifyToken = (req, res) => {
 };
 
 export const getUserProfile = (req, res) => {
-  const { id, name, role } = req.user;
-  
-  return res.json({
-    id,
-    name,
-    role,  
-  });
+  try {
+      console.log('User info from middleware:', req.user);
+
+      if (!req.user) {
+          return res.status(400).json({ message: "User data not found" });
+      }
+
+      const { id, name, role, email, profileImageUrl } = req.user;
+
+      return res.json({
+          id,
+          name,
+          role,
+          email,
+          profileImageUrl
+      });
+  } catch (error) {
+      console.error('Error in getUserProfile:', error);
+      return res.status(500).json({ message: "Internal server error" });
+  }
 };
+
+
 
 export const getPendingRequests = async (req, res) => {
   try {
@@ -235,7 +260,6 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// Función para cambiar el rol de un usuario
 export const changeUserRole = async (req, res) => {
   const userId = req.params.id;
   const { role } = req.body;
@@ -270,3 +294,33 @@ export const changeUserRole = async (req, res) => {
 
 
 
+
+export const createAdmin = async (req, res) => {
+  const { secretKey, name, email, password, photo } = req.body;
+
+  // Verificamos que la clave secreta sea correcta
+  if (secretKey !== process.env.ADMIN_SECRET_KEY) {
+    return res.status(403).json({ message: 'Acceso denegado. Clave secreta incorrecta.' });
+  }
+
+  try {
+    // Registramos al admin directamente con isVerified: true
+    const admin = await userService.registerUser({
+      name,
+      email,
+      password,
+      photo,
+      role: 'admin', // Aseguramos que tenga el rol de admin
+      isVerified: true, // No requiere verificación adicional, se crea como verificado
+    });
+
+    // Respondemos con el éxito
+    res.status(201).json({
+      message: 'Admin creado exitosamente.',
+      user: admin,
+    });
+  } catch (error) {
+    console.error("Error al crear admin:", error);
+    res.status(400).json({ message: error.message });
+  }
+};

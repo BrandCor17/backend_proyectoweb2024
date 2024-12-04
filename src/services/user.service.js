@@ -22,7 +22,6 @@ export const registerUser = async ({ name, email, password, photo, role, verific
       isVerified: false,  
     });
 
-    await user.save();
 
     console.log('Usuario registrado:', user);
     return user; 
@@ -156,16 +155,23 @@ export const approveUserRequest = async (id) => {
 };
 
 
-export const deleteCourse = async (courseId) => {
-  try {
-    const result = await Course.findByIdAndDelete(courseId);
 
-    if (!result) {
-      throw new Error('Curso no encontrado');
-    }
 
-    return result;
-  } catch (error) {
-    throw new Error('Error al intentar eliminar el curso');
+
+export const changeRoleService = async (userId, role) => {
+  if (!['student', 'instructor', 'catedratico'].includes(role)) {
+    throw new Error('Rol no válido.');
   }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error('Usuario no encontrado.');
+  }
+
+  user.role = role;
+  await user.save();
+  
+  return user;
 };
+
+
